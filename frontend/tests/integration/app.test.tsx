@@ -40,6 +40,20 @@ describe('Workflow runs console', () => {
     await waitFor(() => expect(runRows()).toEqual(['run-1006', 'run-1004', 'run-1001']));
   });
 
+  it('summary tiles show totals and act as status filters', async () => {
+    renderApp();
+    const summary = screen.getByRole('group', { name: 'Run summary' });
+    await within(summary).findByRole('button', { name: 'Failed: 3' });
+    await userEvent.click(within(summary).getByRole('button', { name: 'Failed: 3' }));
+    await waitFor(() => expect(runRows()).toEqual(['run-1006', 'run-1004', 'run-1001']));
+    expect(screen.getByLabelText('Status')).toHaveValue('failed');
+    // Totals stay unfiltered while the list is filtered.
+    expect(within(summary).getByRole('button', { name: 'All runs: 6' })).toHaveAttribute('aria-pressed', 'false');
+
+    await userEvent.click(within(summary).getByRole('button', { name: 'All runs: 6' }));
+    await waitFor(() => expect(runRows()).toHaveLength(6));
+  });
+
   it('searches by workflow name (debounced) and shows an empty state', async () => {
     renderApp();
     await screen.findByRole('table');
@@ -106,6 +120,42 @@ describe('Workflow runs console', () => {
     const row = screen.getAllByRole('row').find((r) => within(r).queryByText('run-1001'))!;
     await waitFor(() => expect(row).toHaveTextContent('success'), { timeout: 3000 });
     expect(row).toHaveTextContent(/2$/);
+  });
+
+  describe('keeps a filtered list in sync when a retried run fails again', () => {
+    const retryUnderFailedFilter = async () => {
+      db.retryOutcome = 'failed';
+      renderApp();
+      await screen.findByRole('table');
+      await userEvent.selectOptions(screen.getByLabelText('Status'), 'failed');
+      await waitFor(() => expect(runRows()).toEqual(['run-1006', 'run-1004', 'run-1001']));
+      const details = await openRun('run-1001');
+      await userEvent.click(await within(details).findByRole('button', { name: 'Retry' }));
+      await within(details).findByText(/Retry started/);
+      // While running, the run no longer matches the "failed" filter...
+      await waitFor(() => expect(runRows()).toEqual(['run-1006', 'run-1004']));
+      return details;
+    };
+
+    const expectRunBackAsFailed = async () => {
+      // ...and once execution fails again it must reappear without any manual refresh.
+      await waitFor(() => expect(runRows()).toEqual(['run-1006', 'run-1004', 'run-1001']), { timeout: 4000 });
+      const row = screen.getAllByRole('row').find((r) => within(r).queryByText('run-1001'))!;
+      expect(row).toHaveTextContent('failed');
+      expect(row).toHaveTextContent(/2$/);
+    };
+
+    it('with the details panel open', async () => {
+      const details = await retryUnderFailedFilter();
+      await waitFor(() => expect(within(details).getByRole('note')).toHaveTextContent('during ingest step'), { timeout: 4000 });
+      await expectRunBackAsFailed();
+    }, 10_000);
+
+    it('after the details panel was closed', async () => {
+      const details = await retryUnderFailedFilter();
+      await userEvent.click(within(details).getByRole('button', { name: 'Close details' }));
+      await expectRunBackAsFailed();
+    }, 10_000);
   });
 
   it('sends only one retry when the button is clicked rapidly', async () => {

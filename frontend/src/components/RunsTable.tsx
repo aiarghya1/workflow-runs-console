@@ -20,9 +20,15 @@ export const RunsTable = memo(function RunsTable({ runs, selectedId, onSelect }:
             <th scope="col">Workflow</th>
             <th scope="col">Status</th>
             <th scope="col">Started</th>
-            <th scope="col">Latency</th>
-            <th scope="col">Tokens</th>
-            <th scope="col">Retries</th>
+            <th scope="col" className="num">
+              Latency
+            </th>
+            <th scope="col" className="num">
+              Tokens
+            </th>
+            <th scope="col" className="num">
+              Retries
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -35,18 +41,18 @@ export const RunsTable = memo(function RunsTable({ runs, selectedId, onSelect }:
             >
               <td>
                 {/* The button makes rows keyboard-accessible; its click bubbles to the row handler. */}
-                <button type="button" className="link-button">
+                <button type="button" className="run-id">
                   {run.id}
                 </button>
               </td>
-              <td>{run.workflowName}</td>
+              <td className="cell-workflow">{run.workflowName}</td>
               <td>
                 <StatusBadge status={run.status} />
               </td>
-              <td>{formatDateTime(run.startedAt)}</td>
-              <td>{formatLatency(run.latencyMs)}</td>
-              <td>{formatNumber(run.tokenCount)}</td>
-              <td>{run.retries}</td>
+              <td className="muted">{formatDateTime(run.startedAt)}</td>
+              <td className="num">{formatLatency(run.latencyMs)}</td>
+              <td className="num">{formatNumber(run.tokenCount)}</td>
+              <td className={run.retries > 0 ? 'num' : 'num muted'}>{run.retries}</td>
             </tr>
           ))}
         </tbody>

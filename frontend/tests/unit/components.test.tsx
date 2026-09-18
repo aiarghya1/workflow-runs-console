@@ -6,6 +6,7 @@ import { RetryPanel } from '../../src/components/RetryPanel';
 import { RunFilters } from '../../src/components/RunFilters';
 import { RunsTable } from '../../src/components/RunsTable';
 import { StatusBadge } from '../../src/components/StatusBadge';
+import { StatsBar } from '../../src/components/StatsBar';
 import { StepList } from '../../src/components/StepList';
 import { ApiError } from '../../src/api/client';
 import { makeRun, renderWithClient } from '../utils';
@@ -121,5 +122,31 @@ describe('RetryPanel', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Retry failed: Run run-1002 is success; only failed runs can be retried',
     );
+  });
+});
+
+describe('StatsBar', () => {
+  const runs = [
+    { ...makeRun({ id: 'a', status: 'failed' }), steps: undefined },
+    { ...makeRun({ id: 'b', status: 'failed' }), steps: undefined },
+    { ...makeRun({ id: 'c', status: 'success' }), steps: undefined },
+  ];
+
+  it('shows counts per status and marks the active filter', () => {
+    render(<StatsBar runs={runs} active="failed" onSelect={vi.fn()} />);
+    const tiles = within(screen.getByRole('group', { name: 'Run summary' })).getAllByRole('button');
+    expect(tiles.map((tile) => tile.textContent)).toEqual(['All runs3', 'Failed2', 'Running0', 'Succeeded1']);
+    expect(screen.getByRole('button', { name: 'Failed: 2' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'All runs: 3' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows placeholders while loading and filters on click', async () => {
+    const onSelect = vi.fn();
+    render(<StatsBar active="" onSelect={onSelect} />);
+    expect(screen.getByRole('button', { name: 'Running: loading' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^Running/ }));
+    expect(onSelect).toHaveBeenLastCalledWith('running');
+    await userEvent.click(screen.getByRole('button', { name: /^All runs/ }));
+    expect(onSelect).toHaveBeenLastCalledWith('');
   });
 });

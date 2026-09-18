@@ -47,7 +47,7 @@ backend/    Express 5 API
 frontend/   React 19 + TanStack Query
   api/           fetch wrapper (timeout, typed errors, response validation) + endpoint functions
   hooks/         useRuns / useRun (polling) / useRetryRun (duplicate guard) / useDebouncedValue
-  components/    RunsTable, RunFilters, RunDetails, StepList, RetryPanel, StatusBadge, Feedback states
+  components/    StatsBar, RunsTable, RunFilters, RunDetails, StepList (timeline), RetryPanel, StatusBadge, Feedback, Icons
   pages/         RunsPage (list/details layout, filter state)
 e2e/        Playwright specs
 ```
@@ -67,8 +67,13 @@ Errors always use the shape `{ error: { code, message, details? } }`. Codes incl
 
 1. `RunsPage` holds the filter state. Search is debounced by 300 ms, then `useRuns(filters)` calls `GET /api/runs`. While a new filter loads, the previous results stay on screen instead of a spinner.
 2. Clicking a row sets `selectedId`, and `<RunDetails key={id}>` calls `useRun(id)` to fetch `GET /api/runs/:id`.
-3. Retry: `useRetryRun` sends the POST, puts the returned `running` run straight into the cache, and invalidates the list. `useRun` polls every second while the run is `running`, and stops once it reaches `success` or `failed`. The list polls the same way while any visible run is running.
-4. On the server, `RunExecutor` advances one step per `STEP_DURATION_MS`. This stands in for a real queue or worker.
+3. Retry: `useRetryRun` sends the POST, puts the returned `running` run straight into the cache, and invalidates the list. The run's detail is polled every second while it is `running`, and polling stops once it reaches `success` or `failed`.
+4. `useRetriedRunsWatcher`, which stays mounted with the page, follows every retried run and refreshes all list queries the moment one leaves `running`. This matters under a filter such as "failed": the running run drops out of that list, so list polling alone would never see it fail again. The watcher keeps working after the details panel closes, and it shares the detail cache with `useRun`, so no request is duplicated. The list also polls while any *visible* run is running.
+5. On the server, `RunExecutor` advances one step per `STEP_DURATION_MS`. This stands in for a real queue or worker.
+
+### Theme
+
+A Light / Dark / System switch sits in the top bar. The choice is saved in `localStorage` per browser; if storage is blocked, it lasts only for that visit. System follows the OS setting live. A small inline script in `frontend/index.html` applies the saved theme before first paint, so there is no light/dark flash. Colours are CSS custom properties, and dark values apply under `:root[data-theme='dark']`.
 
 ### State management
 
@@ -100,8 +105,8 @@ The client never auto-retries mutations (`mutations.retry: false`). Queries retr
 | Layer | Tools | What it covers |
 |---|---|---|
 | Unit | Vitest | Schemas, config, idempotency store, repository, executor (fake timers), service rules, error handler; API client, formatters, query-retry policy, hooks, components |
-| Integration | Vitest + Supertest; RTL + MSW | Full Express app over HTTP (validation, CORS, headers, rate limit, concurrency, logging, real server start/stop); whole React app against a stateful mock API |
-| E2E | Playwright | Real API + production UI build: list, filter, search, details, full retry to success, 5-click duplicate guard, failed-step retry, error and recovery, API hardening |
+| Integration | Vitest + Supertest; RTL + MSW | Full Express app over HTTP (validation, CORS, headers, rate limit, concurrency, logging, real server start/stop, startup failure such as port in use); whole React app against a stateful mock API, including lists staying in sync when a retried run fails again |
+| E2E | Playwright | Real API + production UI build: list, filter, search, details, full retry to success, 5-click duplicate guard, failed-step retry, error and recovery, API hardening, theme switching and persistence |
 
 Unit and integration coverage is enforced at **100%** (lines, branches, functions, statements) in every package. Two files are excluded, each only a few lines of startup wiring: `backend/src/index.ts` (signal handling) and `frontend/src/main.tsx` (DOM mount). The code they call, `startServer` and `App`, is fully tested. E2E is measured by user flows rather than line coverage.
 
