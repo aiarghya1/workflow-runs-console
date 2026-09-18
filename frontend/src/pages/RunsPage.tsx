@@ -6,6 +6,7 @@ import { RunDetails } from '../components/RunDetails';
 import { RunFilters } from '../components/RunFilters';
 import { RunsTable } from '../components/RunsTable';
 import { StatsBar } from '../components/StatsBar';
+import { ThemeSwitcher } from '../components/ThemeSwitcher';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
 import { useRetriedRunsWatcher, useRuns } from '../hooks/useRuns';
 
@@ -39,7 +40,10 @@ export function RunsPage() {
             </span>
             Workflow Ops
           </span>
-          <span className="env-pill">In-memory demo</span>
+          <div className="topbar__actions">
+            <span className="env-pill">In-memory demo</span>
+            <ThemeSwitcher />
+          </div>
         </div>
       </header>
 

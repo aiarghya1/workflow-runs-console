@@ -1,6 +1,6 @@
 /* ---------- Design tokens (light, with dark overrides) ---------- */
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   --font: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
 
@@ -35,35 +35,35 @@
   --shadow-lg: 0 24px 48px -12px rgb(16 24 40 / 0.25);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0b0d12;
-    --surface: #12151c;
-    --surface-2: #171b24;
-    --border: #232837;
-    --border-strong: #2f3547;
-    --text: #eef1f6;
-    --text-2: #aab2c3;
-    --text-3: #6f7890;
+/* Dark theme: data-theme is set from the user's choice (or the OS when set to System). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --surface: #12151c;
+  --surface-2: #171b24;
+  --border: #232837;
+  --border-strong: #2f3547;
+  --text: #eef1f6;
+  --text-2: #aab2c3;
+  --text-3: #6f7890;
 
-    --accent: #818cf8;
-    --accent-hover: #a5b4fc;
-    --accent-soft: rgb(129 140 248 / 0.14);
-    --ring: rgb(129 140 248 / 0.45);
+  --accent: #818cf8;
+  --accent-hover: #a5b4fc;
+  --accent-soft: rgb(129 140 248 / 0.14);
+  --ring: rgb(129 140 248 / 0.45);
 
-    --success: #4ade80;
-    --success-soft: rgb(74 222 128 / 0.12);
-    --running: #60a5fa;
-    --running-soft: rgb(96 165 250 / 0.13);
-    --failed: #fb7185;
-    --failed-soft: rgb(251 113 133 / 0.13);
-    --pending: #98a2b3;
-    --pending-soft: rgb(152 162 179 / 0.12);
+  --success: #4ade80;
+  --success-soft: rgb(74 222 128 / 0.12);
+  --running: #60a5fa;
+  --running-soft: rgb(96 165 250 / 0.13);
+  --failed: #fb7185;
+  --failed-soft: rgb(251 113 133 / 0.13);
+  --pending: #98a2b3;
+  --pending-soft: rgb(152 162 179 / 0.12);
 
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
-    --shadow-lg: 0 24px 48px -12px rgb(0 0 0 / 0.7);
-  }
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 24px 48px -12px rgb(0 0 0 / 0.7);
 }
 
 /* ---------- Base ---------- */
@@ -143,6 +143,94 @@ select {
   color: #fff;
   background: linear-gradient(135deg, #6366f1, #8b5cf6);
   box-shadow: 0 4px 12px -4px rgb(99 102 241 / 0.6);
+}
+
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Theme switcher: segmented control over native radios */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.segmented__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text-2);
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+}
+
+.segmented__option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segmented__option:hover {
+  color: var(--text);
+}
+
+.segmented__option:has(input:checked) {
+  color: var(--text);
+  background: var(--surface);
+  box-shadow:
+    var(--shadow-sm),
+    0 0 0 1px var(--border);
+}
+
+.segmented__option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+@media (max-width: 640px) {
+  .env-pill {
+    display: none;
+  }
+
+  /* Icon-only on phones, but the label stays available to screen readers. */
+  .segmented__text {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 
 .env-pill {
@@ -787,10 +875,8 @@ select {
   font-size: 13px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .btn--primary {
-    color: #0b0d12;
-  }
+[data-theme='dark'] .btn--primary {
+  color: #0b0d12;
 }
 
 /* ---------- Retry, callouts, feedback ---------- */
