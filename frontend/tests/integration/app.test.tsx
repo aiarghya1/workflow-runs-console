@@ -40,6 +40,20 @@ describe('Workflow runs console', () => {
     await waitFor(() => expect(runRows()).toEqual(['run-1006', 'run-1004', 'run-1001']));
   });
 
+  it('summary tiles show totals and act as status filters', async () => {
+    renderApp();
+    const summary = screen.getByRole('group', { name: 'Run summary' });
+    await within(summary).findByRole('button', { name: 'Failed: 3' });
+    await userEvent.click(within(summary).getByRole('button', { name: 'Failed: 3' }));
+    await waitFor(() => expect(runRows()).toEqual(['run-1006', 'run-1004', 'run-1001']));
+    expect(screen.getByLabelText('Status')).toHaveValue('failed');
+    // Totals stay unfiltered while the list is filtered.
+    expect(within(summary).getByRole('button', { name: 'All runs: 6' })).toHaveAttribute('aria-pressed', 'false');
+
+    await userEvent.click(within(summary).getByRole('button', { name: 'All runs: 6' }));
+    await waitFor(() => expect(runRows()).toHaveLength(6));
+  });
+
   it('searches by workflow name (debounced) and shows an empty state', async () => {
     renderApp();
     await screen.findByRole('table');

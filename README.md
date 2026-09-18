@@ -47,7 +47,7 @@ backend/    Express 5 API
 frontend/   React 19 + TanStack Query
   api/           fetch wrapper (timeout, typed errors, response validation) + endpoint functions
   hooks/         useRuns / useRun (polling) / useRetryRun (duplicate guard) / useDebouncedValue
-  components/    RunsTable, RunFilters, RunDetails, StepList, RetryPanel, StatusBadge, Feedback states
+  components/    StatsBar, RunsTable, RunFilters, RunDetails, StepList (timeline), RetryPanel, StatusBadge, Feedback, Icons
   pages/         RunsPage (list/details layout, filter state)
 e2e/        Playwright specs
 ```

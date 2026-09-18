@@ -1,6 +1,7 @@
 import type { WorkflowRun } from '@app/shared';
 import { getErrorMessage } from '../api/client';
 import { useRetryRun } from '../hooks/useRuns';
+import { AlertIcon, RetryIcon } from './Icons';
 
 export function RetryPanel({ run }: { run: WorkflowRun }) {
   const { retry, isPending, isSuccess, error } = useRetryRun();
@@ -11,13 +12,19 @@ export function RetryPanel({ run }: { run: WorkflowRun }) {
     <section className="retry" aria-label="Retry">
       {canRetry && (
         <div className="retry__actions">
-          <button type="button" disabled={isPending} onClick={() => retry({ runId: run.id, mode: 'full_run' })}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={isPending}
+            onClick={() => retry({ runId: run.id, mode: 'full_run' })}
+          >
+            {isPending ? <span className="spinner spinner--light" aria-hidden="true" /> : <RetryIcon />}
             {isPending ? 'Retrying…' : 'Retry'}
           </button>
           {failedStep && (
             <button
               type="button"
-              className="secondary"
+              className="btn btn--secondary"
               disabled={isPending}
               onClick={() => retry({ runId: run.id, mode: 'failed_step', stepName: failedStep.name })}
             >
@@ -28,14 +35,15 @@ export function RetryPanel({ run }: { run: WorkflowRun }) {
       )}
       <div aria-live="polite">
         {isSuccess && (
-          <p className="feedback feedback--success" role="status">
+          <p className="callout callout--success" role="status">
             Retry started. Progress updates automatically.
           </p>
         )}
       </div>
       {error && (
-        <p className="feedback feedback--error" role="alert">
-          Retry failed: {getErrorMessage(error)}
+        <p className="callout callout--error" role="alert">
+          <AlertIcon />
+          <span>Retry failed: {getErrorMessage(error)}</span>
         </p>
       )}
     </section>
