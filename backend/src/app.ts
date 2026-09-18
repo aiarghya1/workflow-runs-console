@@ -28,6 +28,12 @@ export function createApp({ config, logger, runService }: AppDeps): Express {
   app.use(
     pinoHttp({
       logger,
+      // Keep request logs lean: correlation id, route and outcome only (no headers, no bodies).
+      serializers: {
+        req: (req: { id: string; method: string; url: string }) => ({ id: req.id, method: req.method, url: req.url }),
+        res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
+      },
+      autoLogging: { ignore: (req) => req.url === '/health' },
       // Reuse a caller-supplied correlation id only if it is well-formed; otherwise mint one.
       genReqId: (req, res) => {
         const incoming = req.headers['x-request-id'];

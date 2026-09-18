@@ -76,3 +76,6 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .feedback { color: var(--muted); }
 .feedback--error { color: var(--failed); }
 .feedback--success { color: var(--success); }
+
+.table-scroll { overflow-x: auto; }
+.runs-table td, .runs-table th { white-space: nowrap; }

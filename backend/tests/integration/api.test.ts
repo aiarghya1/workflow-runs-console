@@ -1,4 +1,5 @@
 import { listRunsResponseSchema, runResponseSchema } from '@app/shared';
+import { pino } from 'pino';
 import request from 'supertest';
 import { afterEach, describe, expect, it } from 'vitest';
 import { buildContainer } from '../../src/server';
@@ -38,6 +39,26 @@ describe('GET /health', () => {
     expect(good.headers['x-request-id']).toBe('abc-123');
     const bad = await request(app).get('/health').set('X-Request-Id', '<script>alert(1)</script>');
     expect(bad.headers['x-request-id']).not.toContain('<');
+  });
+});
+
+describe('request logging', () => {
+  it('logs lean request lines (no headers) and skips health checks', async () => {
+    const lines: Record<string, unknown>[] = [];
+    const logger = pino({ level: 'info' }, { write: (line: string) => void lines.push(JSON.parse(line)) });
+    const { app, executor } = buildContainer(testConfig(), logger);
+    stopExecutor = () => executor.stop();
+
+    await request(app).get('/health').set('Authorization', 'Bearer secret');
+    await request(app).get('/api/runs/run-1001').set('Authorization', 'Bearer secret');
+
+    const requestLogs = lines.filter((line) => line.msg === 'request completed');
+    expect(requestLogs).toHaveLength(1);
+    expect(requestLogs[0]).toMatchObject({
+      req: { method: 'GET', url: '/api/runs/run-1001', id: expect.any(String) },
+      res: { statusCode: 200 },
+    });
+    expect(JSON.stringify(lines)).not.toContain('secret');
   });
 });
 
