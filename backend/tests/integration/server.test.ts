@@ -14,4 +14,14 @@ describe('startServer', () => {
     await running.close();
     expect(running.server.listening).toBe(false);
   });
+
+  it('rejects instead of crashing when the port is already in use', async () => {
+    const first = await startServer(testConfig());
+    try {
+      const port = new URL(first.url).port;
+      await expect(startServer(testConfig({ PORT: port }))).rejects.toMatchObject({ code: 'EADDRINUSE' });
+    } finally {
+      await first.close();
+    }
+  });
 });

@@ -1,6 +1,13 @@
 import type { RetryAction, WorkflowRun } from '@app/shared';
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useRef } from 'react';
+import {
+  keepPreviousData,
+  useMutation,
+  useMutationState,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { useCallback, useEffect, useRef } from 'react';
 import { NetworkError } from '../api/client';
 import { fetchRun, fetchRuns, retryRun, type RunFilters } from '../api/runs';
 
@@ -8,11 +15,20 @@ export const POLL_INTERVAL_MS = 1_000;
 
 export const runKeys = {
   all: ['runs'] as const,
+  lists: ['runs', 'list'] as const,
   list: (filters: RunFilters) => ['runs', 'list', filters] as const,
   detail: (id: string) => ['runs', 'detail', id] as const,
 };
 
+const retryMutationKey = ['runs', 'retry'] as const;
+
 const pollWhileRunning = (running: boolean) => (running ? POLL_INTERVAL_MS : false);
+
+const detailQuery = (id: string) => ({
+  queryKey: runKeys.detail(id),
+  queryFn: ({ signal }: { signal: AbortSignal }) => fetchRun(id, signal),
+  refetchInterval: (query: { state: { data?: WorkflowRun } }) => pollWhileRunning(query.state.data?.status === 'running'),
+});
 
 export function useRuns(filters: RunFilters) {
   return useQuery({
@@ -25,11 +41,37 @@ export function useRuns(filters: RunFilters) {
 }
 
 export function useRun(id: string) {
-  return useQuery({
-    queryKey: runKeys.detail(id),
-    queryFn: ({ signal }) => fetchRun(id, signal),
-    refetchInterval: (query) => pollWhileRunning(query.state.data?.status === 'running'),
+  return useQuery(detailQuery(id));
+}
+
+/**
+ * Follows every successfully retried run until it leaves `running`, then refreshes all run lists.
+ * List polling alone cannot do this: under a filter like "failed" the running run is not visible,
+ * so nothing would notice when it fails again. Mounted at page level, it keeps working after the
+ * details panel closes, and it shares the detail cache with `useRun`, so there are no duplicate requests.
+ */
+export function useRetriedRunsWatcher() {
+  const queryClient = useQueryClient();
+  const retriedIds = useMutationState({
+    filters: { mutationKey: retryMutationKey, status: 'success' },
+    select: (mutation) => (mutation.state.data as WorkflowRun).id,
   });
+  const ids = [...new Set(retriedIds)];
+  const runningIds = useQueries({
+    queries: ids.map(detailQuery),
+    combine: (results) => results.flatMap((result) => (result.data?.status === 'running' ? [result.data.id] : [])),
+  });
+
+  const runningKey = runningIds.join(',');
+  const previouslyRunning = useRef<string[]>([]);
+  useEffect(() => {
+    const stillRunning = new Set(runningIds);
+    if (previouslyRunning.current.some((id) => !stillRunning.has(id))) {
+      void queryClient.invalidateQueries({ queryKey: runKeys.lists });
+    }
+    previouslyRunning.current = runningIds;
+    // runningKey captures the content of runningIds, which is a new array on every render.
+  }, [runningKey, queryClient]);
 }
 
 export type RetryRequest = Omit<RetryAction, 'requestId'>;
@@ -46,6 +88,7 @@ export function useRetryRun() {
   const pendingKey = useRef<{ requestId: string; fingerprint: string } | null>(null);
 
   const mutation = useMutation({
+    mutationKey: retryMutationKey,
     mutationFn: retryRun,
     onSuccess: (run: WorkflowRun) => queryClient.setQueryData(runKeys.detail(run.id), run),
     onSettled: () => queryClient.invalidateQueries({ queryKey: runKeys.all }),

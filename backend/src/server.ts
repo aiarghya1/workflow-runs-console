@@ -1,5 +1,5 @@
 import type { AddressInfo } from 'node:net';
-import type { Server } from 'node:http';
+import { createServer, type Server } from 'node:http';
 import { workflowRunSchema } from '@app/shared';
 import { z } from 'zod';
 import seedData from '../../fixtures/workflow-runs.json' with { type: 'json' };
@@ -32,10 +32,21 @@ export function buildContainer(config: Config, logger: Logger = createLogger(con
   return { app, executor, logger };
 }
 
+/**
+ * Resolves once the server is listening; rejects (EADDRINUSE, EACCES, bad host, ...) if it cannot start,
+ * so callers get a controlled startup failure instead of an unhandled error.
+ */
 export function startServer(config: Config, logger?: Logger): Promise<RunningServer> {
   const container = buildContainer(config, logger);
-  return new Promise((resolve) => {
-    const server = container.app.listen(config.PORT, config.HOST, () => {
+  const server = createServer(container.app);
+  return new Promise((resolve, reject) => {
+    const onError = (error: Error) => {
+      container.executor.stop();
+      reject(error);
+    };
+    server.once('error', onError);
+    server.listen(config.PORT, config.HOST, () => {
+      server.off('error', onError);
       const { port } = server.address() as AddressInfo;
       const url = `http://${config.HOST}:${port}`;
       container.logger.info({ url }, 'server listening');

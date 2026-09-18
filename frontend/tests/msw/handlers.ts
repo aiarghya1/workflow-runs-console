@@ -4,21 +4,36 @@ import fixtures from '../../../fixtures/workflow-runs.json';
 
 /**
  * Stateful fake of the API, mirroring the backend's retry rules closely enough for UI tests.
- * A retried run completes on the next detail fetch so polling can be observed quickly.
+ * A retried run finishes on its second detail fetch (i.e. after one poll), with `db.retryOutcome`.
  */
 export const db = {
   runs: [] as WorkflowRun[],
   retryRequests: [] as RetryAction[],
-  completing: new Set<string>(),
+  /** run id -> detail fetches left before the retried run finishes */
+  completing: new Map<string, number>(),
+  retryOutcome: 'success' as 'success' | 'failed',
   reset() {
     this.runs = structuredClone(fixtures) as WorkflowRun[];
     this.retryRequests = [];
     this.completing.clear();
+    this.retryOutcome = 'success';
   },
   find(id: string) {
     return this.runs.find((run) => run.id === id);
   },
 };
+
+function finishRun(run: WorkflowRun, outcome: 'success' | 'failed') {
+  run.status = outcome;
+  if (outcome === 'success') {
+    run.steps = run.steps.map(({ name }) => ({ name, status: 'success' }));
+    return;
+  }
+  run.errorMessage = 'LLM provider timeout during ingest step';
+  run.steps = run.steps.map(({ name }, index) =>
+    index === 0 ? { name, status: 'failed', errorMessage: 'LLM provider timeout' } : { name, status: 'pending' },
+  );
+}
 
 const apiError = (status: number, code: string, message: string) =>
   HttpResponse.json({ error: { code, message } }, { status });
@@ -39,10 +54,11 @@ export const handlers = [
   http.get('*/api/runs/:id', ({ params }) => {
     const run = db.find(String(params.id));
     if (!run) return apiError(404, 'NOT_FOUND', `Run ${String(params.id)} not found`);
-    if (db.completing.has(run.id)) {
+    const remaining = db.completing.get(run.id);
+    if (remaining !== undefined && remaining > 1) db.completing.set(run.id, remaining - 1);
+    else if (remaining !== undefined) {
       db.completing.delete(run.id);
-      run.status = 'success';
-      run.steps = run.steps.map(({ name }) => ({ name, status: 'success' }));
+      finishRun(run, db.retryOutcome);
     }
     return HttpResponse.json({ run });
   }),
@@ -60,7 +76,7 @@ export const handlers = [
     run.steps = run.steps.map((step) =>
       step.status === 'failed' || action.mode === 'full_run' ? { name: step.name, status: 'running' } : step,
     );
-    db.completing.add(run.id);
+    db.completing.set(run.id, 2);
     return HttpResponse.json({ run }, { status: 202 });
   }),
 ];

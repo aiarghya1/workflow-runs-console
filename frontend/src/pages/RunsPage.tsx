@@ -5,7 +5,7 @@ import { RunDetails } from '../components/RunDetails';
 import { RunFilters } from '../components/RunFilters';
 import { RunsTable } from '../components/RunsTable';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
-import { useRuns } from '../hooks/useRuns';
+import { useRetriedRunsWatcher, useRuns } from '../hooks/useRuns';
 
 export const SEARCH_DEBOUNCE_MS = 300;
 
@@ -21,6 +21,7 @@ export function RunsPage() {
   );
   const { data, isPending, isFetching, error, refetch } = useRuns(filters);
   const closeDetails = useCallback(() => setSelectedId(null), []);
+  useRetriedRunsWatcher();
 
   return (
     <div className="layout">
