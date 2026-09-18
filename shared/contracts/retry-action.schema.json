@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RetryAction",
+  "type": "object",
+  "required": [
+    "runId",
+    "mode"
+  ],
+  "properties": {
+    "runId": {
+      "type": "string"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "full_run",
+        "failed_step"
+      ]
+    },
+    "stepName": {
+      "type": "string",
+      "enum": [
+        "ingest",
+        "retrieve",
+        "generate",
+        "review"
+      ]
+    },
+    "requestId": {
+      "type": "string",
+      "description": "Optional idempotency token for safe retry handling."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "failed_step"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "stepName"
+        ]
+      }
+    }
+  ],
+  "additionalProperties": false
+}

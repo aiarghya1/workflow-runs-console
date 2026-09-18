@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "WorkflowRun",
+  "type": "object",
+  "required": [
+    "id",
+    "workflowName",
+    "status",
+    "startedAt",
+    "latencyMs",
+    "tokenCount",
+    "retries",
+    "steps"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "workflowName": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "success",
+        "running",
+        "failed"
+      ]
+    },
+    "startedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "latencyMs": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "tokenCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "retries": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "errorMessage": {
+      "type": "string"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "status"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "enum": [
+              "ingest",
+              "retrieve",
+              "generate",
+              "review"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "success",
+              "running",
+              "failed",
+              "pending"
+            ]
+          },
+          "errorMessage": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

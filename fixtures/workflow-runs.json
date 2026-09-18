@@ -1,0 +1,170 @@
+[
+  {
+    "id": "run-1001",
+    "workflowName": "contract-review",
+    "status": "failed",
+    "startedAt": "2026-04-09T08:00:00Z",
+    "latencyMs": 14520,
+    "tokenCount": 18234,
+    "retries": 1,
+    "errorMessage": "LLM provider timeout during generate step",
+    "steps": [
+      {
+        "name": "ingest",
+        "status": "success"
+      },
+      {
+        "name": "retrieve",
+        "status": "success"
+      },
+      {
+        "name": "generate",
+        "status": "failed",
+        "errorMessage": "LLM provider timeout"
+      },
+      {
+        "name": "review",
+        "status": "pending"
+      }
+    ]
+  },
+  {
+    "id": "run-1002",
+    "workflowName": "invoice-extraction",
+    "status": "success",
+    "startedAt": "2026-04-09T08:07:00Z",
+    "latencyMs": 6230,
+    "tokenCount": 9340,
+    "retries": 0,
+    "steps": [
+      {
+        "name": "ingest",
+        "status": "success"
+      },
+      {
+        "name": "retrieve",
+        "status": "success"
+      },
+      {
+        "name": "generate",
+        "status": "success"
+      },
+      {
+        "name": "review",
+        "status": "success"
+      }
+    ]
+  },
+  {
+    "id": "run-1003",
+    "workflowName": "vendor-risk-analysis",
+    "status": "running",
+    "startedAt": "2026-04-09T08:11:00Z",
+    "latencyMs": 3810,
+    "tokenCount": 4210,
+    "retries": 0,
+    "steps": [
+      {
+        "name": "ingest",
+        "status": "success"
+      },
+      {
+        "name": "retrieve",
+        "status": "running"
+      },
+      {
+        "name": "generate",
+        "status": "pending"
+      },
+      {
+        "name": "review",
+        "status": "pending"
+      }
+    ]
+  },
+  {
+    "id": "run-1004",
+    "workflowName": "onboarding-summary",
+    "status": "failed",
+    "startedAt": "2026-04-09T08:15:00Z",
+    "latencyMs": 9120,
+    "tokenCount": 11873,
+    "retries": 0,
+    "errorMessage": "Vector store unavailable during retrieve step",
+    "steps": [
+      {
+        "name": "ingest",
+        "status": "success"
+      },
+      {
+        "name": "retrieve",
+        "status": "failed",
+        "errorMessage": "Vector store unavailable"
+      },
+      {
+        "name": "generate",
+        "status": "pending"
+      },
+      {
+        "name": "review",
+        "status": "pending"
+      }
+    ]
+  },
+  {
+    "id": "run-1005",
+    "workflowName": "legal-qa",
+    "status": "success",
+    "startedAt": "2026-04-09T08:22:00Z",
+    "latencyMs": 5320,
+    "tokenCount": 7645,
+    "retries": 0,
+    "steps": [
+      {
+        "name": "ingest",
+        "status": "success"
+      },
+      {
+        "name": "retrieve",
+        "status": "success"
+      },
+      {
+        "name": "generate",
+        "status": "success"
+      },
+      {
+        "name": "review",
+        "status": "success"
+      }
+    ]
+  },
+  {
+    "id": "run-1006",
+    "workflowName": "policy-comparison",
+    "status": "failed",
+    "startedAt": "2026-04-09T08:29:00Z",
+    "latencyMs": 12810,
+    "tokenCount": 16002,
+    "retries": 2,
+    "errorMessage": "Human review callback expired",
+    "steps": [
+      {
+        "name": "ingest",
+        "status": "success"
+      },
+      {
+        "name": "retrieve",
+        "status": "success"
+      },
+      {
+        "name": "generate",
+        "status": "success"
+      },
+      {
+        "name": "review",
+        "status": "failed",
+        "errorMessage": "Human review callback expired"
+      }
+    ]
+  }
+]
